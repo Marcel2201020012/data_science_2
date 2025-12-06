@@ -200,7 +200,9 @@ elif option == "Testing":
     model = backpropagation(learning_rate=0.1)
     file = st.file_uploader("Unggah Model")
     scaler = st.file_uploader("Unggah Scaler")
-    tanggal = tanggal[jumlah_hari:] 
+
+    if jumlah_hari > 0:
+        tanggal = tanggal[jumlah_hari:] 
 
     if file is not None and scaler is not None:
         model.load_model(file)
