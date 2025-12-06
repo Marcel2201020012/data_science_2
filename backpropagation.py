@@ -109,7 +109,6 @@ if file is not None and jumlah_hari > 0:
     dataset = pd.read_csv(file)
     data = dataset["Total"].values
     tanggal = dataset["Tanggal"].values
-    tanggal = tanggal[jumlah_hari:] 
 
     input, target = [], []
 
@@ -133,7 +132,6 @@ if file is not None and jumlah_hari > 0:
 
         for i in range(len(input)):
             row = {}
-            row["Tanggal"] = tanggal[i]
             row["Input"] = str(input[i])
             row["Target"] = target[i]
             baris.append(row)
@@ -202,6 +200,7 @@ elif option == "Testing":
     model = backpropagation(learning_rate=0.1)
     file = st.file_uploader("Unggah Model")
     scaler = st.file_uploader("Unggah Scaler")
+    tanggal = tanggal[jumlah_hari:] 
 
     if file is not None and scaler is not None:
         model.load_model(file)
