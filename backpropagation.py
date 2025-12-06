@@ -185,7 +185,6 @@ elif option == "Validasi":
 
         fig, ax1 = plt.subplots(figsize=(12,5))
 
-        # --- Prediction & Target (Left Axis) ---
         ax1.plot(target, label='Prediksi', linewidth=1)
         ax1.plot(pred, label='Target', linewidth=1)
         ax1.set_xlabel("Sample")
