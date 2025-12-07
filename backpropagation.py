@@ -44,7 +44,7 @@ class backpropagation:
         self.bobot -= gradient_bobot * self.learning_rate
 
     def train(self, input, target, steps):
-        total_error = []
+        error_per_steps = []
         for i in range(steps):
             random_index = np.random.randint(len(input))
 
@@ -61,10 +61,9 @@ class backpropagation:
                     error = self.mse(pred, target[j])
                     jumlah_error += error
                 
-                rata_rata = jumlah_error / len(input)
-                total_error.append(rata_rata)
+                error_per_steps.append(jumlah_error / len(input))
 
-        return total_error, rata_rata
+        return error_per_steps
     
     def validasi(self, input, target, scl):
         scaler = joblib.load(scl)
@@ -138,7 +137,7 @@ if option == "Training":
     if learning_rate > 0 and steps > 0:
         if st.button("Mulai"):
             model = backpropagation(learning_rate, jumlah_hari)
-            error, rata_rata = model.train(input, target, steps)
+            error = model.train(input, target, steps)
             
             if error is not None:
                 fig, ax = plt.subplots()
@@ -150,7 +149,7 @@ if option == "Training":
                 st.pyplot(fig)
 
                 st.write("Error Pertama: ", error[0])
-                st.write("Error Terakhir: ", rata_rata)
+                st.write("Error Terakhir: ", error[-1])
 
                 buffer = BytesIO()
                 model.save_model(buffer)
