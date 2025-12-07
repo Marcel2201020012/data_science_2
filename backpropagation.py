@@ -59,10 +59,10 @@ class backpropagation:
                 for j in range(len(input)):
                     pred = self.prediksi(input[j])
                     error = self.mse(pred, target[j])
-                    jumlah_error = jumlah_error + error
+                    jumlah_error += error
                 
                 rata_rata = jumlah_error / len(input)
-                total_error.append(jumlah_error)
+                total_error.append(rata_rata)
 
         return total_error, rata_rata
     
@@ -154,15 +154,14 @@ if option == "Training":
             if error is not None:
                 fig, ax = plt.subplots()
                 ax.plot(error)
-                ax.set_title("Training Loss")
-                ax.set_xlabel("Step")
+                ax.set_title("Training Loss Setiap 100 Steps")
+                ax.set_xlabel("Steps")
                 ax.set_ylabel("Loss")
 
                 st.pyplot(fig)
 
-                st.write("Rata-Rata Error: ", rata_rata)
                 st.write("Error Pertama: ", error[0])
-                st.write("Error Terakhir: ", error[-1])
+                st.write("Error Terakhir: ", rata_rata)
 
                 buffer = BytesIO()
                 model.save_model(buffer)
@@ -194,7 +193,7 @@ elif option == "Validasi":
 
         st.pyplot(fig)
 
-        st.write("Error Rata-Rata", rata_rata)
+        st.write("Error Rata-Rata: ", rata_rata)
 elif option == "Testing":
     model = backpropagation(learning_rate=0.1)
     file = st.file_uploader("Unggah Model")
@@ -224,4 +223,4 @@ elif option == "Testing":
         st.write("Hasil Pengujian")
         st.dataframe(output)
 
-        st.write("Error Rata-Rata", rata_rata)
+        st.write("Error Rata-Rata: ", rata_rata)
