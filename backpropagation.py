@@ -8,8 +8,8 @@ import streamlit as st
 from io import BytesIO
 
 class backpropagation:
-    def __init__(self, learning_rate):
-        self.bobot = np.array([np.random.randn(), np.random.randn()])
+    def __init__(self, learning_rate=0.1, input=1):
+        self.bobot = np.array(np.random.randn(input))
         self.bias = np.random.randn()
         self.learning_rate = learning_rate
     
@@ -66,30 +66,19 @@ class backpropagation:
 
         return total_error, rata_rata
     
-    def validasi(self, input, target):
-        total_error = 0
-        for i in range(len(input)):
-            pred = self.prediksi(input[i])
-            error = self.mse(pred, target[i])
-            total_error += error
-
-        rata_rata = total_error / len(input)
-
-        return rata_rata, pred, error
-    
-    def test(self, input, scl):
+    def validasi(self, input, target, scl):
         scaler = joblib.load(scl)
         output = np.zeros(len(input))
-        
+
         total_error = 0
         for i in range(len(input)):
             pred = self.prediksi(input[i])
-            output[i] = scaler.inverse_transform([[pred]])[0][0]
             error = self.mse(pred, target[i])
             total_error += error
+            output[i] = scaler.inverse_transform([[pred]])[0][0]
 
         rata_rata = total_error / len(input)
-        
+
         return output, scaler, rata_rata
     
     def save_model(self, file):
@@ -140,7 +129,7 @@ if file is not None and jumlah_hari > 0:
         st.write("Preview Data")
         st.dataframe(preview)
 
-option = st.selectbox("Mode", ["=== Pilih Mode ===", "Training", "Validasi", "Testing"])
+option = st.selectbox("Mode", ["=== Pilih Mode ===", "Training", "Validasi/Testing"])
 
 if option == "Training":
     learning_rate = st.number_input("Learning Rate", min_value=0.0, max_value=1.0, step=0.1)
@@ -148,7 +137,7 @@ if option == "Training":
 
     if learning_rate > 0 and steps > 0:
         if st.button("Mulai"):
-            model = backpropagation(learning_rate)
+            model = backpropagation(learning_rate, jumlah_hari)
             error, rata_rata = model.train(input, target, steps)
             
             if error is not None:
@@ -174,28 +163,8 @@ if option == "Training":
                     mime="application/octet-stream"
                 )
 
-elif option == "Validasi":
-    model = backpropagation(learning_rate=0.1)
-    file = st.file_uploader("Unggah Model")
-
-    if file is not None:
-        model.load_model(file)
-        rata_rata, pred, error = model.validasi(input, target)
-
-        fig, ax1 = plt.subplots(figsize=(12,5))
-
-        ax1.plot(target, label='Prediksi', linewidth=1)
-        ax1.plot(pred, label='Target', linewidth=1)
-        ax1.set_xlabel("Sample")
-        ax1.set_ylabel("Nilai")
-        ax1.set_title("Perbandingan Prediksi dan Target")
-        ax1.legend(loc="upper left")
-
-        st.pyplot(fig)
-
-        st.write("Error Rata-Rata: ", rata_rata)
-elif option == "Testing":
-    model = backpropagation(learning_rate=0.1)
+elif option == "Validasi/Testing":
+    model = backpropagation()
     file = st.file_uploader("Unggah Model")
     scaler = st.file_uploader("Unggah Scaler")
 
@@ -204,7 +173,7 @@ elif option == "Testing":
 
     if file is not None and scaler is not None:
         model.load_model(file)
-        prediksi, scaler, rata_rata = model.test(input, scaler)
+        pred, scaler, rata_rata = model.validasi(input, target, scaler)
 
         baris = []
         array_target = np.array(target)
@@ -215,12 +184,24 @@ elif option == "Testing":
         for i in range(len(input)):
             row = {}
             row["Tanggal"] = tanggal[i]
-            row["Prediksi"] = prediksi[i]
+            row["Prediksi"] = pred[i]
             row["Target"] = target_value[i]
             baris.append(row)
 
         output = pd.DataFrame(baris)
         st.write("Hasil Pengujian")
         st.dataframe(output)
+
+        fig, ax1 = plt.subplots(figsize=(12,5))
+
+        ax1.plot(pred, label='Prediksi', linewidth=1, color='blue')
+        ax1.plot(target_value, label='Target', linewidth=1, color='red')
+
+        ax1.set_xlabel("Sample")
+        ax1.set_ylabel("Nilai")
+        ax1.set_title("Perbandingan Prediksi dan Target")
+        ax1.legend(loc="upper left")
+
+        st.pyplot(fig)
 
         st.write("Error Rata-Rata: ", rata_rata)
