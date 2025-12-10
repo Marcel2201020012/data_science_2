@@ -57,7 +57,6 @@ class lstm():
             cc = np.tanh(self.bobot_i_cc @ input + self.bobot_h_cc @ prev_h + self.bias_cc)
             og = self.sigmoid(self.bobot_i_og @ input + self.bobot_h_og @ prev_h + self.bias_og)
 
-            c_prev = prev_c.copy()
             #update cell state (long term)
             c = fg * prev_c + ig * cc
 
@@ -68,12 +67,11 @@ class lstm():
             y = self.bobot_y @ h + self.bias_y
             output.append(y)
 
-            self.cache.append((input, prev_h, fg, ig, og, cc, c_prev, c))
+            self.cache.append((input, prev_h, h, fg, ig, og, cc, prev_c, c))
 
         return output[-1]
     
     def backward(self, gradient_output, learning_rate=0.1):
-        # Initialize gradients
         dWi_fg = np.zeros_like(self.bobot_i_fg)
         dWi_ig = np.zeros_like(self.bobot_i_ig)
         dWi_cc = np.zeros_like(self.bobot_i_cc)
@@ -92,36 +90,30 @@ class lstm():
         dWy = np.zeros_like(self.bobot_y)
         dby = np.zeros_like(self.bias_y)
 
-        # Initialize next-step gradients
         dh_next = np.zeros((self.hidden_size, 1))
         dc_next = np.zeros((self.hidden_size, 1))
 
-        # Loop backwards through time
+        #BPTT
         for i in reversed(range(len(gradient_output))):
-            x, h_prev, fg, ig, og, cc, c_prev, c = self.cache[i]
+            x, h_prev, h, fg, ig, og, cc, c_prev, c = self.cache[i]
 
-            # (1) Output layer gradient
             dy = gradient_output[i].reshape(-1, 1)
-            dWy += dy @ self.cache[i][-1].T  # h = last element in cache (or use h from loop)
+            dWy += dy @ h.T
             dby += dy
 
-            # (2) Gradient from output + next time step
             dh = self.bobot_y.T @ dy + dh_next
             dc = dh * og * self.dtanh(c) + dc_next
 
-            # (3) Gate gradients
             dog = dh * np.tanh(c)
             dfg = dc * c_prev
             dig = dc * cc
             dcc = dc * ig
 
-            # (4) Pre-activation gradients (apply derivative of activation)
             dog_input = dog * self.dsigmoid(self.bobot_i_og @ x + self.bobot_h_og @ h_prev + self.bias_og)
             dfg_input = dfg * self.dsigmoid(self.bobot_i_fg @ x + self.bobot_h_fg @ h_prev + self.bias_fg)
             dig_input = dig * self.dsigmoid(self.bobot_i_ig @ x + self.bobot_h_ig @ h_prev + self.bias_ig)
             dcc_input = dcc * self.dtanh(self.bobot_i_cc @ x + self.bobot_h_cc @ h_prev + self.bias_cc)
 
-            # (5) Accumulate weight gradients
             dWi_fg += dfg_input @ x.T
             dWi_ig += dig_input @ x.T
             dWi_cc += dcc_input @ x.T
@@ -137,7 +129,6 @@ class lstm():
             db_cc += dcc_input
             db_og += dog_input
 
-            # (6) Compute gradients to propagate to previous time step
             dx = (self.bobot_i_fg.T @ dfg_input +
                   self.bobot_i_ig.T @ dig_input +
                   self.bobot_i_cc.T @ dcc_input +
@@ -148,9 +139,9 @@ class lstm():
                        self.bobot_h_cc.T @ dcc_input +
                        self.bobot_h_og.T @ dog_input)
 
-            dc_next = dc * fg  # ← key! forget gate modulates how much c_prev matters
+            dc_next = dc * fg
 
-        # (7) Update parameters
+        #Update parameters
         self.bobot_i_fg -= learning_rate * dWi_fg
         self.bobot_i_ig -= learning_rate * dWi_ig
         self.bobot_i_cc -= learning_rate * dWi_cc
@@ -170,39 +161,36 @@ class lstm():
         self.bias_y -= learning_rate * dby
 
     def save_model(self, filepath):
-        """Save all weights and biases to a .npz file"""
         np.savez(
             filepath,
-            # Input weights
+
             bobot_i_fg=self.bobot_i_fg,
             bobot_i_ig=self.bobot_i_ig,
             bobot_i_cc=self.bobot_i_cc,
             bobot_i_og=self.bobot_i_og,
-            # Hidden weights
+
             bobot_h_fg=self.bobot_h_fg,
             bobot_h_ig=self.bobot_h_ig,
             bobot_h_cc=self.bobot_h_cc,
             bobot_h_og=self.bobot_h_og,
-            # Biases
+
             bias_fg=self.bias_fg,
             bias_ig=self.bias_ig,
             bias_cc=self.bias_cc,
             bias_og=self.bias_og,
+
             # Output layer
             bobot_y=self.bobot_y,
             bias_y=self.bias_y,
-            # Also save architecture info
+
             input_size=np.array([self.input_size]),
             hidden_size=np.array([self.hidden_size]),
             output_size=np.array([self.output_size])
         )
-        print(f"Model saved to {filepath}.npz")
 
     def load_model(self, filepath):
-        """Load weights and biases from a .npz file"""
         data = np.load(filepath)
 
-        # Load weights & biases
         self.bobot_i_fg = data['bobot_i_fg']
         self.bobot_i_ig = data['bobot_i_ig']
         self.bobot_i_cc = data['bobot_i_cc']
@@ -221,15 +209,13 @@ class lstm():
         self.bobot_y = data['bobot_y']
         self.bias_y = data['bias_y']
 
-        print(f"Model loaded from {filepath}")
-
 input_size = 1
 hidden_size = 32
 output_size = 1
 
-dataset = pd.read_csv("data/normalize/train.csv")
+dataset = pd.read_csv("data/prediksi/normalize/train.csv")
 data = dataset["Total"].values
-jumlah_hari = 2
+jumlah_hari = 10
 
 input_train, target_train = [], []
 
