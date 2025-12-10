@@ -857,6 +857,7 @@ elif studi_kasus == "Klasifikasi":
     st.title("Klasifikasi Sentimen")
 
     file = st.file_uploader("Unggah Dataset Dalam Format CSV")
+    dataset = None
     if file is not None:
         dataset = pd.read_csv(file)
 
