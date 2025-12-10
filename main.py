@@ -1018,7 +1018,7 @@ elif studi_kasus == "Klasifikasi":
                     st.pyplot(fig)
 
                     st.write(f"Error Rata-Rata: ", rata_rata)
-        elif methode == "LSTM" and dataset:
+        elif methode == "LSTM" and dataset is not None:
             all_words = []
             labels = []
             texts = []
